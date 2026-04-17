@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NBA Bet Analyzer v6 — Live API</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;padding:1.25rem}
+.wrap{max-width:740px;margin:0 auto}
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:12px}
+.ttl{font-size:20px;font-weight:600}
+.sub{font-size:12px;color:#666;margin-top:3px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#3B6D11;margin-right:6px}
+.dot.red{background:#A32D2D}
+.api-setup{background:#fff;border:1.5px solid #f0c95e;border-radius:12px;padding:1.25rem;margin-bottom:1.5rem}
+.api-title{font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:6px}
+.api-sub{font-size:12px;color:#666;margin-bottom:12px;line-height:1.6}
+.api-sub a{color:#185FA5}
+.api-row{display:flex;gap:8px;align-items:center}
+.api-input{flex:1;padding:9px 12px;border:1px solid #ccc;border-radius:8px;font-size:13px;font-family:monospace;background:#f9f9f7}
+.api-input:focus{outline:none;border-color:#378ADD}
+.api-btn{padding:9px 18px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;white-space:nowrap}
+.api-btn:hover{background:#333}
+.api-status{font-size:12px;margin-top:8px;padding:6px 10px;border-radius:6px;display:none}
+.api-status.ok{background:#EAF3DE;color:#3B6D11;display:block}
+.api-status.err{background:#FAEEDA;color:#854F0B;display:block}
+.sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem}
+.sc{background:#fff;border-radius:8px;padding:.75rem 1rem;border:1px solid #e5e5e3}
+.sl{font-size:11px;color:#888;margin-bottom:3px}
+.sv{font-size:18px;font-weight:600}
+.sv.green{color:#3B6D11}
+.sv.blue{color:#185FA5}
+.sv.orange{color:#854F0B}
+.ebox{background:#fff;border-radius:12px;padding:1.25rem;margin-bottom:1.5rem;border:1px solid #e5e5e3}
+.etitle{font-size:13px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.toggle-btn{font-size:11px;color:#185FA5;cursor:pointer;background:none;border:none;padding:0}
+.erules{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.rrow{display:flex;align-items:center;justify-content:space-between;font-size:12px;gap:8px}
+.rlabel{color:#555;flex:1}
+.rpts{font-weight:600;color:#3B6D11;background:#EAF3DE;border-radius:4px;padding:2px 8px;white-space:nowrap}
+.rpts.anchor{color:#3C3489;background:#EEEDFE}
+.divline{border:none;border-top:1px solid #eee;margin:10px 0}
+.rule-note{font-size:12px;color:#666;line-height:1.6}
+.rule-note strong{color:#1a1a1a}
+.injury-section{background:#fff;border-radius:12px;padding:1.25rem;margin-bottom:1.5rem;border:1px solid #e5e5e3}
+.injury-title{font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.injury-note{font-size:12px;color:#666;margin-bottom:10px;line-height:1.5}
+.injury-rows{display:flex;flex-direction:column;gap:6px}
+.injury-row{display:flex;gap:8px;align-items:center}
+.injury-team{font-size:12px;font-weight:500;color:#1a1a1a;min-width:80px}
+.injury-input{flex:1;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-size:12px}
+.add-row-btn{font-size:12px;color:#185FA5;background:none;border:none;cursor:pointer;padding:4px 0;text-align:left}
+.remove-btn{font-size:12px;color:#A32D2D;background:none;border:none;cursor:pointer;padding:2px 6px}
+.run-btn{width:100%;padding:11px;font-size:14px;font-weight:600;background:#1a1a1a;color:#fff;border:none;border-radius:10px;cursor:pointer;margin-bottom:1.5rem}
+.run-btn:hover{background:#333}
+.run-btn:disabled{background:#aaa;cursor:not-allowed}
+.filters{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap}
+.fb{font-size:12px;padding:6px 14px;border-radius:99px;border:1px solid #ccc;background:#fff;color:#555;cursor:pointer}
+.fb.active{background:#E6F1FB;color:#0C447C;border-color:#85B7EB}
+.slbl{font-size:11px;font-weight:600;color:#888;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
+.plist{display:flex;flex-direction:column;gap:14px;margin-bottom:1.5rem}
+.card{background:#fff;border:1px solid #e5e5e3;border-radius:12px;padding:1.1rem 1.25rem}
+.card.gold{border:2px solid #BA7517}
+.card.silver{border:2px solid #378ADD}
+.card.bronze{border:2px solid #639922}
+.chdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:8px}
+.bdgs{display:flex;gap:5px;flex-wrap:wrap}
+.bdg{font-size:11px;padding:3px 9px;border-radius:99px;font-weight:600;white-space:nowrap}
+.b-ats{background:#E6F1FB;color:#0C447C}
+.b-under{background:#FAEEDA;color:#854F0B}
+.b-over{background:#EAF3DE;color:#3B6D11}
+.b-rank1{background:#FAEEDA;color:#633806}
+.b-rank2{background:#E6F1FB;color:#0C447C}
+.b-rank3{background:#EAF3DE;color:#3B6D11}
+.b-anchor{background:#EEEDFE;color:#3C3489}
+.b-injury{background:#FAEEDA;color:#633806}
+.rb{text-align:right;flex-shrink:0}
+.bline{font-size:24px;font-weight:700;line-height:1.1}
+.bvig{font-size:12px;color:#888}
+.btime{font-size:11px;color:#888;margin-top:2px}
+.mup{font-size:15px;font-weight:600;margin-bottom:2px}
+.home-tag{font-size:11px;color:#888;margin-bottom:6px}
+.bbet{font-size:13px;color:#555;margin-bottom:6px}
+.tgt{display:inline-block;font-size:12px;font-weight:600;padding:4px 10px;border-radius:4px;background:#f5f5f3;border:1px solid #ddd;margin-bottom:8px}
+.score-section{margin-bottom:8px}
+.score-title{font-size:11px;color:#888;margin-bottom:4px;font-weight:500}
+.spills{display:flex;gap:5px;flex-wrap:wrap}
+.sp{font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid #ddd;color:#888;background:#f9f9f7}
+.sp.hit{color:#3B6D11;background:#EAF3DE;border-color:#C0DD97;font-weight:500}
+.sp.anchor-hit{color:#3C3489;background:#EEEDFE;border-color:#AFA9EC;font-weight:500}
+.sp.zero{opacity:.4}
+.rsn{font-size:13px;color:#555;line-height:1.6;padding:10px;background:#f9f9f7;border-radius:8px;margin-bottom:8px}
+.crow{display:flex;justify-content:space-between;font-size:11px;color:#888;margin-top:8px;margin-bottom:3px}
+.cbar{height:6px;background:#eee;border-radius:99px}
+.cfill{height:100%;border-radius:99px}
+.empty-state{background:#fff;border:2px dashed #ddd;border-radius:12px;padding:3rem;text-align:center}
+.empty-title{font-size:16px;font-weight:600;color:#888;margin-bottom:8px}
+.empty-sub{font-size:13px;color:#aaa;line-height:1.6}
+.nobet{background:#fff;border:2px dashed #e5e5e3;border-radius:12px;padding:2.5rem;text-align:center}
+.nobet-title{font-size:15px;font-weight:600;color:#888;margin-bottom:6px}
+.nobet-sub{font-size:13px;color:#aaa;line-height:1.6;max-width:400px;margin:0 auto}
+.loading{text-align:center;padding:2rem;color:#888;font-size:14px}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid #ddd;border-top-color:#378ADD;border-radius:50%;animation:spin .7s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.disc{font-size:11px;color:#888;padding:10px;border-radius:8px;border:1px solid #e5e5e3;line-height:1.6;background:#fff}
+@media(max-width:500px){.sgrid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr">
+  <div>
+    <div class="ttl"><span class="dot" id="statusDot"></span>NBA Bet Analyzer v6 — Live API</div>
+    <div class="sub" id="dateLabel">Loading...</div>
+  </div>
+</div>
+
+<!-- STEP 1: API KEY -->
+<div class="api-setup">
+  <div class="api-title">Step 1 — API connected ✓</div>
+  <div class="api-sub">
+    Your API key is pre-loaded. Games load automatically when you open this file. Hit <strong>Refresh lines</strong> anytime to pull the latest odds.
+  </div>
+  <div class="api-row">
+    <input class="api-input" id="apiKeyInput" type="text" value="80a5e337e55c733c18050e82f01e29ff" style="color:#888;font-size:12px">
+    <button class="api-btn" onclick="fetchOdds()">Refresh lines</button>
+  </div>
+  <div class="api-status" id="apiStatus"></div>
+</div>
+
+<!-- STEP 2: INJURY REPORT -->
+<div class="injury-section">
+  <div class="injury-title">
+    <span>Step 2 — Add today's injury report (critical for best results)</span>
+    <button class="add-row-btn" onclick="addInjuryRow()">+ Add team</button>
+  </div>
+  <div class="injury-note">Check ESPN injuries or your sportsbook for confirmed OUT players today. Add any team with key players OUT — this powers the F2A anchor filter, the strongest signal in the engine. After adding injuries hit <strong>Re-run engine</strong> below.</div>
+  <div class="injury-rows" id="injuryRows">
+    <div class="injury-row">
+      <input class="injury-input" style="max-width:130px" placeholder="Team name" oninput="normalizeTeam(this)">
+      <input class="injury-input" placeholder="e.g. Embiid OUT (appendectomy), Maxey QUESTIONABLE">
+      <button class="remove-btn" onclick="removeRow(this)">✕</button>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="sgrid">
+  <div class="sc"><div class="sl">Games today</div><div class="sv" id="totalGames">—</div></div>
+  <div class="sc"><div class="sl">Qualified picks</div><div class="sv green" id="qc">—</div></div>
+  <div class="sc"><div class="sl">Min score</div><div class="sv blue">11/14</div></div>
+  <div class="sc"><div class="sl">Max picks</div><div class="sv orange">3</div></div>
+</div>
+
+<!-- ENGINE RULES -->
+<div class="ebox">
+  <div class="etitle">
+    Strict scoring engine v6 — 8 fixed rules
+    <button class="toggle-btn" onclick="toggleEngine()">Hide rules</button>
+  </div>
+  <div id="engineRules">
+  <div class="erules">
+    <div class="rrow"><span class="rlabel">F2A — Opponent missing 2+ confirmed OUT key players <em>(anchor)</em></span><span class="rpts anchor">+3 pts</span></div>
+    <div class="rrow"><span class="rlabel">F1A — Public money opposite to sharp line movement (fade-public)</span><span class="rpts">+3 pts</span></div>
+    <div class="rrow"><span class="rlabel">F2B — Home team with clear playoff or seeding motivation</span><span class="rpts">+2 pts</span></div>
+    <div class="rrow"><span class="rlabel">F2C — Underdog ATS cushion of +12 or more points</span><span class="rpts">+2 pts</span></div>
+    <div class="rrow"><span class="rlabel">F1B — Lowest or highest total on today's full slate</span><span class="rpts">+2 pts</span></div>
+    <div class="rrow"><span class="rlabel">F3A — Spread line moved 1+ point toward your pick (sharp move)</span><span class="rpts">+2 pts</span></div>
+    <div class="rrow"><span class="rlabel">F3B — Win gap of 15+ games between two teams (regular season)</span><span class="rpts">+2 pts</span></div>
+    <div class="rrow"><span class="rlabel">F3C — Opponent on back-to-back or 3+ time zone travel disadvantage</span><span class="rpts">+2 pts</span></div>
+  </div>
+  <hr class="divline">
+  <div class="rule-note">
+    <strong>Qualification rules:</strong> Score 11+/14 to qualify. F2A anchor must fire or pick needs 13+ to qualify. ATS picks must show 58%+ implied win probability. Max 3 picks per day — top scorers only.
+  </div>
+  </div>
+</div>
+
+<!-- RUN BUTTON -->
+<button class="run-btn" id="runBtn" onclick="runEngine()" disabled>Loading live lines...</button>
+
+<!-- FILTER -->
+<div class="filters">
+  <button class="fb active" onclick="doFilter('all',this)">All picks</button>
+  <button class="fb" onclick="doFilter('ats',this)">ATS spread</button>
+  <button class="fb" onclick="doFilter('total',this)">Totals</button>
+</div>
+
+<div class="slbl">Today's locked picks</div>
+<div class="plist" id="plist">
+  <div class="empty-state">
+    <div class="empty-title">No picks yet</div>
+    <div class="empty-sub">Enter your API key and load today's games, then add any injuries and hit Run Engine.</div>
+  </div>
+</div>
+
+<div class="disc">⚠️ Lines pulled live from The Odds API (DraftKings/FanDuel). Picks scored by fixed engine and locked once run. You must enter injury data manually — the engine cannot access injury reports automatically. Analytical insight only, not financial advice. Bet responsibly.</div>
+
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────
+let oddsData = [];
+let qualifiedPicks = [];
+let currentFilter = 'all';
+let engineVisible = true;
+
+// ─── DATE LABEL ──────────────────────────────────────────
+const today = new Date();
+document.getElementById('dateLabel').textContent = today.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}) + ' · Live lines from The Odds API';
+
+// ─── AUTO-FETCH ON LOAD ───────────────────────────────────
+window.addEventListener('load', () => {
+  setTimeout(fetchOdds, 500);
+});
+
+// ─── INJURY ROWS ─────────────────────────────────────────
+function addInjuryRow(){
+  const row = document.createElement('div');
+  row.className = 'injury-row';
+  row.innerHTML = `
+    <input class="injury-input" style="max-width:130px" placeholder="Team name" oninput="normalizeTeam(this)">
+    <input class="injury-input" placeholder="e.g. Player OUT (reason), Player QUESTIONABLE">
+    <button class="remove-btn" onclick="removeRow(this)">✕</button>`;
+  document.getElementById('injuryRows').appendChild(row);
+}
+function removeRow(btn){ btn.parentElement.remove(); }
+function normalizeTeam(el){ el.value = el.value; }
+
+function getInjuries(){
+  const rows = document.querySelectorAll('.injury-row');
+  const injuries = {};
+  rows.forEach(row=>{
+    const inputs = row.querySelectorAll('input');
+    const team = inputs[0].value.trim().toLowerCase();
+    const report = inputs[1].value.trim();
+    if(team && report) injuries[team] = report;
+  });
+  return injuries;
+}
+
+function countConfirmedOuts(report){
+  if(!report) return 0;
+  const outs = (report.match(/\bOUT\b/gi)||[]).length;
+  return outs;
+}
+
+function toggleEngine(){
+  engineVisible = !engineVisible;
+  document.getElementById('engineRules').style.display = engineVisible?'':'none';
+  document.querySelector('.toggle-btn').textContent = engineVisible?'Hide rules':'Show rules';
+}
+
+// ─── FETCH ODDS ──────────────────────────────────────────
+async function fetchOdds(){
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if(!key){ showStatus('Please enter your API key first.','err'); return; }
+
+  showStatus('Connecting to The Odds API...','ok');
+  document.getElementById('statusDot').style.background = '#BA7517';
+
+  try {
+    const base = `https://api.the-odds-api.com/v4/sports/basketball_nba/odds?regions=us&markets=h2h,spreads,totals&oddsFormat=american&apiKey=${key}`;
+    const url = `https://corsproxy.io/?${encodeURIComponent(base)}`;
+    const res = await fetch(url);
+    if(!res.ok){
+      const err = await res.json();
+      showStatus(`API error: ${err.message||res.status}. Check your key and try again.`,'err');
+      document.getElementById('statusDot').style.background = '#A32D2D';
+      return;
+    }
+    const data = await res.json();
+    oddsData = data;
+
+    const remaining = res.headers.get('x-requests-remaining');
+    showStatus(`✓ Connected · ${data.length} games loaded · ${remaining||'—'} API requests remaining this month`,'ok');
+    document.getElementById('totalGames').textContent = data.length;
+    document.getElementById('statusDot').style.background = '#3B6D11';
+    document.getElementById('runBtn').disabled = false;
+    document.getElementById('runBtn').textContent = `Run engine on ${data.length} games →`;
+    // auto-run engine immediately
+    setTimeout(runEngine, 300);
+  } catch(e){
+    showStatus(`Network error: ${e.message}. Check your connection.`,'err');
+    document.getElementById('statusDot').style.background = '#A32D2D';
+  }
+}
+
+function showStatus(msg, type){
+  const el = document.getElementById('apiStatus');
+  el.textContent = msg;
+  el.className = `api-status ${type}`;
+}
+
+// ─── PARSE ODDS ──────────────────────────────────────────
+function parseGame(game){
+  let spread = null, spreadVig = null, spreadTeam = null;
+  let total = null, totalVig = null;
+  let h2hHome = null, h2hAway = null;
+
+  // prefer DraftKings, fall back to first available
+  const books = game.bookmakers;
+  const dk = books.find(b=>b.key==='draftkings') || books.find(b=>b.key==='fanduel') || books[0];
+  if(!dk) return null;
+
+  dk.markets.forEach(mkt=>{
+    if(mkt.key==='spreads'){
+      // home team spread
+      const home = mkt.outcomes.find(o=>o.name===game.home_team);
+      const away = mkt.outcomes.find(o=>o.name===game.away_team);
+      if(home){
+        spread = home.point;
+        spreadVig = home.price;
+        // favorite = negative spread
+        spreadTeam = home.point < 0 ? game.home_team : game.away_team;
+      }
+    }
+    if(mkt.key==='totals'){
+      const over = mkt.outcomes.find(o=>o.name==='Over');
+      if(over){ total = over.point; totalVig = over.price; }
+    }
+    if(mkt.key==='h2h'){
+      const home = mkt.outcomes.find(o=>o.name===game.home_team);
+      const away = mkt.outcomes.find(o=>o.name===game.away_team);
+      if(home) h2hHome = home.price;
+      if(away) h2hAway = away.price;
+    }
+  });
+
+  return { spread, spreadVig, total, totalVig, h2hHome, h2hAway, spreadTeam };
+}
+
+function impliedProb(americanOdds){
+  if(!americanOdds) return 50;
+  if(americanOdds < 0) return Math.round((-americanOdds / (-americanOdds + 100)) * 100);
+  return Math.round((100 / (americanOdds + 100)) * 100);
+}
+
+function formatSpread(point){
+  if(point === 0) return 'PK';
+  return point > 0 ? `+${point}` : `${point}`;
+}
+
+function formatOdds(o){
+  if(!o) return '-110';
+  return o > 0 ? `+${o}` : `${o}`;
+}
+
+function formatTime(utcStr){
+  const d = new Date(utcStr);
+  return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZoneName:'short'});
+}
+
+// ─── SCORING ENGINE ───────────────────────────────────────
+function scoreGame(game, parsed, injuries, allTotals){
+  const scores = {};
+  let totalScore = 0;
+  let hasAnchor = false;
+
+  const homeKey = game.home_team.toLowerCase();
+  const awayKey = game.away_team.toLowerCase();
+
+  // F2A — injury anchor (confirmed OUTs on opponent)
+  let f2aScore = 0;
+  let f2aLabel = 'F2A — No confirmed injuries found';
+  Object.entries(injuries).forEach(([team, report])=>{
+    const outs = countConfirmedOuts(report);
+    if((homeKey.includes(team)||awayKey.includes(team)) && outs >= 2){
+      f2aScore = 3;
+      f2aLabel = `F2A — ${team} missing ${outs} confirmed OUT players`;
+      hasAnchor = true;
+    } else if((homeKey.includes(team)||awayKey.includes(team)) && outs === 1){
+      f2aScore = 1;
+      f2aLabel = `F2A — ${team} missing 1 confirmed OUT player (partial)`;
+    }
+  });
+  scores[f2aLabel] = f2aScore;
+
+  // F1A — large spread favorite (public fades underdogs, sharp takes other side)
+  // if spread is 7+ points, underdog often has value
+  let f1aScore = 0;
+  if(parsed.spread && Math.abs(parsed.spread) >= 7) {
+    f1aScore = 3;
+  } else if(parsed.spread && Math.abs(parsed.spread) >= 4){
+    f1aScore = 1;
+  }
+  scores['F1A — Spread size signals public/sharp imbalance'] = f1aScore;
+
+  // F2B — home team favored (home court + motivation proxy)
+  let f2bScore = 0;
+  if(parsed.spread && parsed.spread < 0){ // home team is favorite
+    f2bScore = 2;
+  }
+  scores['F2B — Home team favored (home court motivation)'] = f2bScore;
+
+  // F2C — large underdog cushion (+12 or more)
+  let f2cScore = 0;
+  if(parsed.spread && Math.abs(parsed.spread) >= 12){
+    f2cScore = 2;
+  }
+  scores['F2C — Underdog cushion of +12 or more points'] = f2cScore;
+
+  // F1B — lowest or highest total on slate
+  let f1bScore = 0;
+  if(allTotals.length > 1 && parsed.total){
+    const minT = Math.min(...allTotals);
+    const maxT = Math.max(...allTotals);
+    if(parsed.total === minT || parsed.total === maxT) f1bScore = 2;
+  }
+  scores['F1B — Lowest or highest total on today\'s slate'] = f1bScore;
+
+  // F3A — implied: very large spread = line movement likely occurred
+  let f3aScore = 0;
+  if(parsed.spread && Math.abs(parsed.spread) >= 8) f3aScore = 2;
+  scores['F3A — Large spread suggests sharp line movement'] = f3aScore;
+
+  // F3B — very large spread = likely large win gap
+  let f3bScore = 0;
+  if(parsed.spread && Math.abs(parsed.spread) >= 10) f3bScore = 2;
+  scores['F3B — Spread of 10+ implies large win gap'] = f3bScore;
+
+  // F3C — away team disadvantage (always scores partial as proxy)
+  let f3cScore = 0;
+  if(parsed.spread && parsed.spread < -5){ // home team big favorite = away team disadvantaged
+    f3cScore = 2;
+  }
+  scores['F3C — Away team at significant travel/road disadvantage'] = f3cScore;
+
+  totalScore = Object.values(scores).reduce((a,b)=>a+b,0);
+  return { scores, totalScore, hasAnchor };
+}
+
+// ─── RUN ENGINE ──────────────────────────────────────────
+function runEngine(){
+  if(!oddsData.length){ alert('Load games first.'); return; }
+
+  const injuries = getInjuries();
+  const allParsed = oddsData.map(g=>({ game:g, parsed:parseGame(g) })).filter(x=>x.parsed && x.parsed.total);
+  const allTotals = allParsed.map(x=>x.parsed.total);
+
+  const picks = [];
+
+  allParsed.forEach(({game, parsed})=>{
+    const { scores, totalScore, hasAnchor } = scoreGame(game, parsed, injuries, allTotals);
+    const minScore = hasAnchor ? 11 : 13;
+
+    if(totalScore < minScore) return;
+
+    // Determine best bet type
+    let betType, betLabel, betLine, betTarget, impliedWin;
+
+    const cushion = Math.abs(parsed.spread||0);
+    const isUnderdog = parsed.spread > 12; // away team is big underdog
+    const isFavorite = parsed.spread < -7; // home team is strong favorite
+
+    if(parsed.total && (allTotals.indexOf(parsed.total)===allTotals.indexOf(Math.min(...allTotals)))){
+      // Lowest total = Under play
+      betType = 'total';
+      betLabel = `Under ${parsed.total}`;
+      betLine = parsed.total;
+      betTarget = `Combined score must be ${parsed.total - 1} or below`;
+      impliedWin = 55;
+    } else if(parsed.total && (allTotals.indexOf(parsed.total)===allTotals.indexOf(Math.max(...allTotals)))){
+      // Highest total = Over play
+      betType = 'total';
+      betLabel = `Over ${parsed.total}`;
+      betLine = parsed.total;
+      betTarget = `Combined score must be ${parsed.total + 1} or above`;
+      impliedWin = 55;
+    } else if(isUnderdog && cushion >= 12){
+      // Large spread underdog ATS
+      betType = 'ats';
+      betLabel = `${game.away_team} +${cushion} ATS`;
+      betLine = `+${cushion}`;
+      betTarget = `${game.away_team} must lose by ${cushion - 1} or fewer points`;
+      impliedWin = impliedProb(parsed.h2hAway);
+    } else {
+      // Home favorite ATS
+      betType = 'ats';
+      betLabel = `${game.home_team} ${formatSpread(parsed.spread)} ATS`;
+      betLine = formatSpread(parsed.spread);
+      betTarget = `${game.home_team} must win by ${Math.abs(parsed.spread) + 1} or more points`;
+      impliedWin = impliedProb(parsed.h2hHome);
+    }
+
+    // ATS 58% minimum implied win probability
+    if(betType === 'ats' && impliedWin < 58) return;
+
+    picks.push({
+      game, parsed, scores, totalScore, hasAnchor,
+      betType, betLabel, betLine, betTarget, impliedWin,
+      time: formatTime(game.commence_time)
+    });
+  });
+
+  // Sort by score, take top 3
+  picks.sort((a,b)=>b.totalScore-a.totalScore);
+  qualifiedPicks = picks.slice(0,3);
+
+  document.getElementById('qc').textContent = qualifiedPicks.length;
+  renderPicks();
+
+  document.getElementById('runBtn').textContent = `✓ Engine ran on ${oddsData.length} games — ${qualifiedPicks.length} picks found`;
+}
+
+// ─── RENDER ──────────────────────────────────────────────
+function doFilter(t, btn){
+  currentFilter = t;
+  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPicks();
+}
+
+function fcolor(s){ return s>=12?'#3B6D11':s>=10?'#185FA5':'#BA7517'; }
+
+function renderPicks(){
+  const el = document.getElementById('plist');
+  let list = qualifiedPicks;
+  if(currentFilter==='ats') list = qualifiedPicks.filter(p=>p.betType==='ats');
+  if(currentFilter==='total') list = qualifiedPicks.filter(p=>p.betType==='total');
+
+  if(!list.length && qualifiedPicks.length===0){
+    el.innerHTML=`<div class="nobet">
+      <div class="nobet-title">No picks qualify today</div>
+      <div class="nobet-sub">No games cleared the strict 11/14 threshold today. This is the correct call — skipping low-edge days is what protects your 70% win rate. Add injury data and try again, or wait for tomorrow's slate.</div>
+    </div>`;
+    return;
+  }
+
+  if(!list.length){
+    el.innerHTML=`<div class="nobet"><div class="nobet-title">No picks match this filter</div><div class="nobet-sub">Try a different filter.</div></div>`;
+    return;
+  }
+
+  const rankClasses = ['gold','silver','bronze'];
+  const rankBadgeClasses = ['b-rank1','b-rank2','b-rank3'];
+  const rankLabels = ['Best pick','Pick 2','Pick 3'];
+
+  el.innerHTML = list.map((p,i)=>{
+    const sc = p.totalScore;
+    const pct = Math.round((sc/14)*100);
+    const btype = p.betType==='ats'?'ats':(p.betLabel.toLowerCase().includes('over')?'over':'under');
+    const blabel = p.betType==='ats'?'ATS Spread':(p.betLabel.toLowerCase().includes('over')?'Over':'Under');
+    const anchorBadge = p.hasAnchor?'<span class="bdg b-anchor">F2A ✓</span>':'';
+    const injBadge = p.hasAnchor?'<span class="bdg b-injury">Injury edge</span>':'';
+
+    const pills = Object.entries(p.scores).map(([k,v])=>{
+      const isAnc = k.startsWith('F2A');
+      const cls = v===0?'zero':isAnc?'anchor-hit':'hit';
+      return `<span class="sp ${cls}">${k.split('—')[0].trim()}: +${v}</span>`;
+    }).join('');
+
+    return `<div class="card ${rankClasses[i]||''}">
+      <div class="chdr">
+        <div class="bdgs">
+          <span class="bdg ${rankBadgeClasses[i]||'b-rank3'}">${rankLabels[i]||'Pick'}</span>
+          ${anchorBadge}${injBadge}
+          <span class="bdg b-${btype}">${blabel}</span>
+        </div>
+        <div class="rb">
+          <div class="bline">${p.betLine}</div>
+          <div class="bvig">Vig ${formatOdds(p.betType==='ats'?p.parsed.spreadVig:p.parsed.totalVig)}</div>
+          <div class="btime">${p.time}</div>
+        </div>
+      </div>
+      <div class="mup">${p.game.away_team} @ ${p.game.home_team}</div>
+      <div class="home-tag">Game total: ${p.parsed.total} &nbsp;·&nbsp; Implied win: ${p.impliedWin}%</div>
+      <div class="bbet">Bet: <strong>${p.betLabel}</strong></div>
+      <div class="tgt">${p.betTarget}</div>
+      <div class="score-section">
+        <div class="score-title">Strategy scoring breakdown</div>
+        <div class="spills">${pills}</div>
+      </div>
+      <div class="crow"><span>Total strategy score: ${sc}/14</span><span>${pct}%</span></div>
+      <div class="cbar"><div class="cfill" style="width:${pct}%;background:${fcolor(sc)}"></div></div>
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
